@@ -2,8 +2,8 @@ import mysql from '../utils/mysql'
 import { Logger } from '../utils/log4js'
 
 export default {
-  login: (account: string, password: string) => {
-    const sql = `select * from users where account = '${account}' and password = '${password}'`
+  login: (name: string, password: string) => {
+    const sql = `select * from users where name = '${name}' and password = '${password}'`
     return new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
         if (err) {
@@ -16,11 +16,12 @@ export default {
       })
     })
   },
-  selectUesrList: (page: number, size: number, name: string) => {
-    const sql = `select id, account, level, name from users where 1=1 ${
-      name ? 'and name="' + name + '"' : ''
-    } limit ${(page - 1) * size},${size}`
-    const sqlCount = `select found_rows() as totalElements from users`
+  selectUesrList: (page: number, size: number, name: string, level: number) => {
+    const sql = `select id, level, name from users where 1=1 ${name ? 'and name LIKE "%' + name + '%"' : ''
+      } ${level ? 'and level="' + level + '"' : ''
+      }  limit ${(page - 1) * size},${size}`
+    console.log(sql)
+    const sqlCount = `SELECT FOUND_ROWS() as totalElements`
     const P1 = new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
         if (err) {
@@ -61,12 +62,11 @@ export default {
     })
   },
   createUser: (
-    account: number,
     password: string,
     name: string,
     level: number,
   ) => {
-    const sql = `INSERT INTO users ( account, password, name, level, create_time) VALUES  ( '${account}', '${password}', '${name}', '${level}', NOW() )`
+    const sql = `INSERT INTO users ( password, name, level, create_time) VALUES  ( '${password}', '${name}', '${level}', NOW() )`
     return new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
         if (err) {
@@ -80,11 +80,12 @@ export default {
     })
   },
   updateUser: (
+    id: number,
     password: string,
     name: string,
     level: number,
   ) => {
-    const sql = `UPDATE users SET password='${password}', name='${name}', level='${level}'`
+    const sql = `UPDATE users SET password='${password}', name='${name}', level='${level}' where id='${id}'`
     return new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
         if (err) {
@@ -92,6 +93,42 @@ export default {
           reject(err)
         } else {
           Logger.info('新建用户成功==========》', result)
+          resolve(true)
+        }
+      })
+    })
+  },
+  selectUsersByLevel: (
+    level: string,
+  ) => {
+    let val = [level]
+    if (level.length > 1) {
+      val = level.split(',')
+    }
+    const sql = `select id, level, name from users where (level='${val[0]}' or level='${val.length > 1 ? val[1] : val[0]}')`
+    return new Promise((resolve, reject) => {
+      mysql.query(sql, (err, result) => {
+        if (err) {
+          Logger.info('根据等级查询用户失败==========》', err)
+          reject(err)
+        } else {
+          Logger.info('根据等级查询用户成功==========》', result)
+          resolve(result)
+        }
+      })
+    })
+  },
+  deteleUser: (
+    id: number
+  ) => {
+    const sql = `DELETE FROM users WHERE id='${id}'`
+    return new Promise((resolve, reject) => {
+      mysql.query(sql, (err, result) => {
+        if (err) {
+          Logger.info('删除用户失败==========》', err)
+          reject(err)
+        } else {
+          Logger.info('删除用户成功==========》', result)
           resolve(true)
         }
       })

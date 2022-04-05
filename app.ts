@@ -9,6 +9,8 @@ import config from './config/token'
 
 import indexRouter from './routes/index'
 import usersRouter from './routes/users'
+import teamRouter from './routes/team'
+import saleSlipRouter from './routes/saleSlip'
 
 const app = express()
 
@@ -34,6 +36,8 @@ app.use(
 )
 app.use('/', indexRouter)
 app.use('/users', usersRouter)
+app.use('/team', teamRouter)
+app.use('/saleSlips', saleSlipRouter)
 
 
 // catch 404 and forward to error handler

@@ -2,9 +2,9 @@ import jwt from 'jsonwebtoken'
 import config from '../config/token'
 const jwtSecret = config.tokenKey
 
-export const generateToken = (account: string | number, password: string) => {
+export const generateToken = (name: string, password: string) => {
   return new Promise((resolve, reject) => {
-    const token = jwt.sign({ account, password }, jwtSecret, {
+    const token = jwt.sign({ name, password }, jwtSecret, {
       expiresIn: config.tokenExpires,
     })
     resolve(token)

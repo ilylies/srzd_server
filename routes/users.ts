@@ -6,17 +6,16 @@ const router = express.Router()
 
 /* GET users listing. */
 router.get('/login', (req, res, next) => {
-  const { account, password }: any = req.query
+  const { name, password }: any = req.query
   userDb
-    .login(account, password)
+    .login(name, password)
     .then(async (data: any) => {
       if (data) {
-        const token = await generateToken(data.account, data.password)
+        const token = await generateToken(data.name, data.password)
         response.success(res, {
           id: data.id,
           token,
-          account: data.account,
-          userName: data.name,
+          name: data.name,
         })
       } else {
         response.fail(res, '账号或密码错误')
@@ -28,9 +27,9 @@ router.get('/login', (req, res, next) => {
 })
 
 router.get('/list', (req, res, next) => {
-  const { page, size, name }: any = req.query
+  const { page, size, name, level }: any = req.query
   userDb
-    .selectUesrList(page, size, name)
+    .selectUesrList(page, size, name, level)
     .then(async (data: any) => {
       response.success(res, data)
     })
@@ -40,9 +39,9 @@ router.get('/list', (req, res, next) => {
 })
 
 router.post('/create', (req, res, next) => {
-  const { account, password, name, level }: any = req.body
+  const { password, name, level }: any = req.body
   userDb
-    .createUser(account, password, name, level)
+    .createUser(password, name, level)
     .then(async (data: any) => {
       response.success(res, data)
     })
@@ -50,10 +49,11 @@ router.post('/create', (req, res, next) => {
       response.fail(res, err)
     })
 })
-router.put('/update', (req, res, next) => {
-  const {password, name, level }: any = req.body
+router.put('/update/:id', (req, res, next) => {
+  const { password, name, level }: any = req.body
+  const { id }: any = req.params
   userDb
-    .updateUser( password, name, level)
+    .updateUser(id, password, name, level)
     .then(async (data: any) => {
       response.success(res, data)
     })
@@ -61,5 +61,27 @@ router.put('/update', (req, res, next) => {
       response.fail(res, err)
     })
 })
+router.get('/usersByLevel', (req, res, next) => {
+  const { level }: any = req.query
+  userDb
+    .selectUsersByLevel(level)
+    .then(async (data: any) => {
+      response.success(res, data)
+    })
+    .catch((err) => {
+      response.fail(res, err)
+    })
+})
+router.delete("/delete/:id", (req, res, next) => {
+  const { id }: any = req.params;
+  userDb
+    .deteleUser(id)
+    .then(async (data: any) => {
+      response.success(res, data);
+    })
+    .catch((err) => {
+      response.fail(res, err);
+    });
+});
 
 export default router
