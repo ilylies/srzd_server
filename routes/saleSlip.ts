@@ -6,9 +6,9 @@ const router = express.Router()
 /* GET salesSlip listing. */
 
 router.get('/list', (req, res, next) => {
-  const { page, size, company_name }: any = req.query
+  const { page, size, company_name, company_tags, appropriation_status, team, telemarketer }: any = req.query
   salesSlipDb
-    .selectSalesSlipList(page, size, company_name)
+    .selectSalesSlipList(page, size, company_name, company_tags, appropriation_status, team, telemarketer)
     .then(async (data: any) => {
       response.success(res, data)
     })

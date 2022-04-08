@@ -2,9 +2,17 @@ import mysql from '../utils/mysql'
 import { Logger } from '../utils/log4js'
 
 export default {
-  selectSalesSlipList: (page: number, size: number, company_name: string) => {
+  selectSalesSlipList: (page: number, size: number, company_name: string, company_tags: number, appropriation_status: number|string, team: number, telemarketer: number) => {
     const sql = `select * from sales_slip where 1=1 ${
       company_name ? 'and company_name="' + company_name + '"' : ''
+    } ${
+      company_tags ? 'and company_tags="' + company_tags + '"' : ''
+    } ${
+      appropriation_status ? 'and appropriation_status="' + appropriation_status + '"' : ''
+    } ${
+      team ? 'and team="' + team + '"' : ''
+    } ${
+      telemarketer ? 'and telemarketer="' + telemarketer + '"' : ''
     } limit ${(page - 1) * size},${size}`
     const sqlCount = `SELECT FOUND_ROWS() as totalElements`
     const P1 = new Promise((resolve, reject) => {
