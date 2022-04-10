@@ -16,6 +16,7 @@ router.get('/login', (req, res, next) => {
           id: data.id,
           token,
           name: data.name,
+          level: data.level
         })
       } else {
         response.fail(res, '账号或密码错误')
