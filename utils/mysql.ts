@@ -6,4 +6,5 @@ export default mysql.createConnection({
   password: 'root',
   database: 'srzd',
   port: 3306,
+  multipleStatements: true,
 })

@@ -6,9 +6,25 @@ const router = express.Router()
 /* GET salesSlip listing. */
 
 router.get('/list', (req, res, next) => {
-  const { page, size, company_name, company_tags, appropriation_status, team, telemarketer }: any = req.query
+  const {
+    page,
+    size,
+    company_name,
+    company_tags,
+    appropriation_status,
+    team,
+    telemarketer
+  }: any = req.query
   salesSlipDb
-    .selectSalesSlipList(page, size, company_name, company_tags, appropriation_status, team, telemarketer)
+    .selectSalesSlipList(
+      page,
+      size,
+      company_name,
+      company_tags,
+      appropriation_status,
+      team,
+      telemarketer
+    )
     .then(async (data: any) => {
       response.success(res, data)
     })
@@ -21,7 +37,7 @@ router.post('/create', (req, res, next) => {
   const {
     company_name,
     company_contact_name,
-    company_phone,
+    loan_amount,
     company_tags,
     record,
     appropriation_status,
@@ -32,7 +48,7 @@ router.post('/create', (req, res, next) => {
     .createSalesSlip(
       company_name,
       company_contact_name,
-      company_phone,
+      loan_amount,
       company_tags,
       record,
       appropriation_status,
@@ -50,7 +66,7 @@ router.put('/update/:id', (req, res, next) => {
   const {
     company_name,
     company_contact_name,
-    company_phone,
+    loan_amount,
     company_tags,
     record,
     appropriation_status,
@@ -63,7 +79,7 @@ router.put('/update/:id', (req, res, next) => {
       id,
       company_name,
       company_contact_name,
-      company_phone,
+      loan_amount,
       company_tags,
       record,
       appropriation_status,
@@ -81,6 +97,28 @@ router.delete('/delete/:id', (req, res, next) => {
   const { id }: any = req.params
   salesSlipDb
     .deteleSalesSlip(id)
+    .then(async (data: any) => {
+      response.success(res, data)
+    })
+    .catch((err) => {
+      response.fail(res, err)
+    })
+})
+router.get('/selectSalesTotal', (req, res, next) => {
+  const { team, userId }: any = req.query
+  salesSlipDb
+    .selectSalesTotal(team, userId)
+    .then(async (data: any) => {
+      response.success(res, data)
+    })
+    .catch((err) => {
+      response.fail(res, err)
+    })
+})
+router.get('/selectSalesTotalByTime', (req, res, next) => {
+  const { startTime, endTime, team, userId }: any = req.query
+  salesSlipDb
+    .selectSalesTotalByTime(startTime, endTime, team, userId)
     .then(async (data: any) => {
       response.success(res, data)
     })
