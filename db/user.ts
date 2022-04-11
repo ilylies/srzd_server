@@ -17,9 +17,11 @@ export default {
     })
   },
   selectUesrList: (page: number, size: number, name: string, level: number) => {
-    const sql = `select id, level, name from users where 1=1 ${name ? 'and name LIKE "%' + name + '%"' : ''
-      } ${level ? 'and level="' + level + '"' : ''
-      }  limit ${(page - 1) * size},${size}`
+    const sql = `select id, level, name from users where 1=1 ${
+      name ? 'and name LIKE "%' + name + '%"' : ''
+    } ${level ? 'and level="' + level + '"' : ''}  limit ${
+      (page - 1) * size
+    },${size}`
     console.log(sql)
     const sqlCount = `SELECT FOUND_ROWS() as totalElements`
     const P1 = new Promise((resolve, reject) => {
@@ -51,21 +53,17 @@ export default {
             content: result[0],
             totalElements: result[1][0].totalElements,
             page: Number(page),
-            size: Number(size),
+            size: Number(size)
           })
         },
         (err) => {
           Logger.info('用户列表查询失败==========》', err)
           reject(err)
-        },
+        }
       )
     })
   },
-  createUser: (
-    password: string,
-    name: string,
-    level: number,
-  ) => {
+  createUser: (password: string, name: string, level: number) => {
     const sql = `INSERT INTO users ( password, name, level, create_time) VALUES  ( '${password}', '${name}', '${level}', NOW() )`
     return new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
@@ -79,12 +77,7 @@ export default {
       })
     })
   },
-  updateUser: (
-    id: number,
-    password: string,
-    name: string,
-    level: number,
-  ) => {
+  updateUser: (id: number, password: string, name: string, level: number) => {
     const sql = `UPDATE users SET password='${password}', name='${name}', level='${level}' where id='${id}'`
     return new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
@@ -98,14 +91,27 @@ export default {
       })
     })
   },
-  selectUsersByLevel: (
-    level: string,
-  ) => {
+  selectUsersByLevel: (level: string) => {
+    console.log(level)
     let val = [level]
     if (level.length > 1) {
       val = level.split(',')
     }
-    const sql = `select id, level, name from users where (level='${val[0]}' or level='${val.length > 1 ? val[1] : val[0]}')`
+    if (!level) {
+      val = ['1', '2', '3']
+    }
+
+    console.log(val)
+    const sql = `select id, level, name from users where (level='${
+      val[0]
+    }' or level='${
+      val.length == 3
+        ? val[2] + `' or level='${val[1]}`
+        : val.length == 2
+        ? val[1]
+        : val[0]
+    }')`
+    console.log(sql, 11111)
     return new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
         if (err) {
@@ -118,9 +124,7 @@ export default {
       })
     })
   },
-  deteleUser: (
-    id: number
-  ) => {
+  deteleUser: (id: number) => {
     const sql = `DELETE FROM users WHERE id='${id}'`
     return new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
@@ -133,5 +137,5 @@ export default {
         }
       })
     })
-  },
+  }
 }
