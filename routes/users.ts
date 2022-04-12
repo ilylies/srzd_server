@@ -1,7 +1,8 @@
 import express from 'express'
 import userDb from '../db/user'
 import response from '../utils/response'
-import { generateToken } from '../utils/token'
+import { generateToken, verifyToken } from '../utils/token'
+import { sendMsg } from '../utils/wechat'
 const router = express.Router()
 
 /* GET users listing. */
@@ -11,12 +12,16 @@ router.get('/login', (req, res, next) => {
     .login(name, password)
     .then(async (data: any) => {
       if (data) {
-        const token = await generateToken(data.name, data.password)
+        const token: any = await generateToken(
+          data.id,
+          data.name,
+          data.password,
+        )
         response.success(res, {
           id: data.id,
           token,
           name: data.name,
-          level: data.level
+          level: data.level,
         })
       } else {
         response.fail(res, '账号或密码错误')
@@ -39,23 +44,29 @@ router.get('/list', (req, res, next) => {
     })
 })
 
-router.post('/create', (req, res, next) => {
+router.post('/create', async (req, res, next) => {
   const { password, name, level }: any = req.body
+  const token: any = req.headers.authorization
+  const userInfo: any = await verifyToken(token)
   userDb
     .createUser(password, name, level)
     .then(async (data: any) => {
+      sendMsg(`${userInfo.name}新建了用户：${name}`)
       response.success(res, data)
     })
     .catch((err) => {
       response.fail(res, err)
     })
 })
-router.put('/update/:id', (req, res, next) => {
+router.put('/update/:id', async (req, res, next) => {
   const { password, name, level }: any = req.body
   const { id }: any = req.params
+  const token: any = req.headers.authorization
+  const userInfo: any = await verifyToken(token)
   userDb
     .updateUser(id, password, name, level)
     .then(async (data: any) => {
+      sendMsg(`${userInfo.name}修改了用户信息：${name}`)
       response.success(res, data)
     })
     .catch((err) => {
@@ -73,16 +84,16 @@ router.get('/usersByLevel', (req, res, next) => {
       response.fail(res, err)
     })
 })
-router.delete("/delete/:id", (req, res, next) => {
-  const { id }: any = req.params;
+router.delete('/delete/:id', async (req, res, next) => {
+  const { id }: any = req.params
   userDb
     .deteleUser(id)
     .then(async (data: any) => {
-      response.success(res, data);
+      response.success(res, data)
     })
     .catch((err) => {
-      response.fail(res, err);
-    });
-});
+      response.fail(res, err)
+    })
+})
 
 export default router

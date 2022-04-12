@@ -1,6 +1,8 @@
 import express from "express";
 import teamDb from "../db/team";
 import response from "../utils/response";
+import { verifyToken } from '../utils/token'
+import { sendMsg } from '../utils/wechat'
 const router = express.Router();
 
 /* GET team listing. */
@@ -17,23 +19,29 @@ router.get("/list", (req, res, next) => {
     });
 });
 
-router.post("/create", (req, res, next) => {
+router.post("/create", async (req, res, next) => {
   const { name, captain, members }: any = req.body;
+  const token: any = req.headers.authorization
+  const userInfo: any = await verifyToken(token)
   teamDb
     .createTeam(name, captain, members)
     .then(async (data: any) => {
+      sendMsg(`${userInfo.name}新建了团队：${name}`)
       response.success(res, data);
     })
     .catch((err) => {
       response.fail(res, err);
     });
 });
-router.put("/update/:id", (req, res, next) => {
+router.put("/update/:id", async (req, res, next) => {
   const { name, captain, members }: any = req.body;
   const { id }: any = req.params;
+  const token: any = req.headers.authorization
+  const userInfo: any = await verifyToken(token)
   teamDb
     .updateTeam(id, name, captain, members)
     .then(async (data: any) => {
+      sendMsg(`${userInfo.name}修改了团队信息：${name}`)
       response.success(res, data);
     })
     .catch((err) => {
