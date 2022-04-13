@@ -1,5 +1,6 @@
 import express from 'express'
 import salesSlipDb from '../db/salesSlip'
+import teamDb from '../db/team'
 import response from '../utils/response'
 const router = express.Router()
 import { verifyToken } from '../utils/token'
@@ -7,7 +8,7 @@ import { sendMsg } from '../utils/wechat'
 
 /* GET salesSlip listing. */
 
-router.get('/list', (req, res, next) => {
+router.get('/list', async (req, res, next) => {
   const {
     page,
     size,
@@ -17,6 +18,13 @@ router.get('/list', (req, res, next) => {
     team,
     telemarketer,
   }: any = req.query
+  const token: any = req.headers.authorization
+  const userInfo: any = await verifyToken(token)
+  let teamId: number = 0
+  if (userInfo.level === 2) {
+    const teamData: any = await teamDb.selectTeamByCaptain(userInfo.id)
+    teamId = teamData ? teamData.id : 0
+  }
   salesSlipDb
     .selectSalesSlipList(
       page,
@@ -26,6 +34,9 @@ router.get('/list', (req, res, next) => {
       appropriation_status,
       team,
       telemarketer,
+      userInfo.id,
+      userInfo.level,
+      teamId,
     )
     .then(async (data: any) => {
       response.success(res, data)
@@ -85,7 +96,9 @@ router.post('/create', async (req, res, next) => {
           userInfo.name
         }新建了销售单：\n企业名称：${company_name}\n企业联系人：${company_contact_name}\n放款金额：${loan_amount}\n企业标签：${
           tags_type[company_tags]
-        }\n跟进记录：${record ? JSON.parse(record)[0].content : ''}\n批款情况：${
+        }\n跟进记录：${
+          record ? JSON.parse(record)[0].content : ''
+        }\n批款情况：${
           appropriation_type[appropriation_status] || appropriation_status
         }\n所属团队：${team}\n电销员：${telemarketer}`,
       )
@@ -129,7 +142,7 @@ router.put('/update/:id', async (req, res, next) => {
         }修改了销售单：\n企业名称：${company_name}\n企业联系人：${company_contact_name}\n放款金额：${loan_amount}\n企业标签：${
           tags_type[company_tags]
         }\n跟进记录：${
-          recordData ? recordData[recordData.length-1].content : recordData
+          recordData ? recordData[recordData.length - 1].content : recordData
         }\n批款情况：${
           appropriation_type[appropriation_status] || appropriation_status
         }\n所属团队：${team}\n电销员：${telemarketer}`,

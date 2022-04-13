@@ -9,9 +9,12 @@ export default {
     company_tags: number,
     appropriation_status: number | string,
     team: number,
-    telemarketer: number
+    telemarketer: number,
+    userId: number,
+    level: number,
+    teamId: number
   ) => {
-    const sql = `select * from sales_slip where 1=1 ${
+    let sql = `select * from sales_slip where 1=1 ${
       company_name ? 'and company_name="' + company_name + '"' : ''
     } ${company_tags ? 'and company_tags="' + company_tags + '"' : ''} ${
       appropriation_status
@@ -19,7 +22,16 @@ export default {
         : ''
     } ${team ? 'and team="' + team + '"' : ''} ${
       telemarketer ? 'and telemarketer="' + telemarketer + '"' : ''
-    } limit ${(page - 1) * size},${size}`
+    }`
+
+    if (level === 2) {
+      sql += ` and (team='${teamId}' or telemarketer='${userId}')`
+    }
+    if (level === 3) {
+      sql += ` and telemarketer='${userId}'`
+    }
+    sql += ` limit ${(page - 1) * size},${size}`
+    Logger.info('销售单列表查询sql==========》', sql)
     const sqlCount = `SELECT FOUND_ROWS() as totalElements`
     const P1 = new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
@@ -50,13 +62,13 @@ export default {
             content: result[0],
             totalElements: result[1][0].totalElements,
             page: Number(page),
-            size: Number(size)
+            size: Number(size),
           })
         },
         (err) => {
           Logger.info('团队列表查询失败==========》', err)
           reject(err)
-        }
+        },
       )
     })
   },
@@ -68,7 +80,7 @@ export default {
     record: string,
     appropriation_status: number,
     team: number,
-    telemarketer: number
+    telemarketer: number,
   ) => {
     const sql = `INSERT INTO sales_slip ( company_name, company_contact_name, loan_amount, company_tags, record,appropriation_status,team,telemarketer,create_time) 
     VALUES  ( '${company_name}', '${company_contact_name}', '${loan_amount}','${company_tags}','${record}','${appropriation_status}','${team}','${telemarketer}',  NOW() )`
@@ -93,7 +105,7 @@ export default {
     record: string,
     appropriation_status: number,
     team: number,
-    telemarketer: number
+    telemarketer: number,
   ) => {
     const sql = `UPDATE sales_slip SET company_name='${company_name}',
      company_contact_name='${company_contact_name}', 
@@ -163,7 +175,12 @@ export default {
       })
     })
   },
-  selectSalesTotalByTime: (startTime: string, endTime: string, team?: number, userId?: number) => {
+  selectSalesTotalByTime: (
+    startTime: string,
+    endTime: string,
+    team?: number,
+    userId?: number,
+  ) => {
     startTime += ' 00:00:00'
     endTime += ' 23:59:59'
     let sql = `SELECT SUM(loan_amount) as total FROM sales_slip WHERE loan_amount_time >= '${startTime}' AND loan_amount_time <= '${endTime}'`
@@ -184,5 +201,5 @@ export default {
         }
       })
     })
-  }
+  },
 }

@@ -3,8 +3,9 @@ import { Logger } from '../utils/log4js'
 
 export default {
   selectTeamList: (page: number, size: number, name: string) => {
-    const sql = `select id, name, captain, members from team where 1=1 ${name ? 'and name="' + name + '"' : ''
-      } limit ${(page - 1) * size},${size}`
+    const sql = `select id, name, captain, members from team where 1=1 ${
+      name ? 'and name="' + name + '"' : ''
+    } limit ${(page - 1) * size},${size}`
     const sqlCount = `SELECT FOUND_ROWS() as totalElements`
     const P1 = new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
@@ -14,7 +15,9 @@ export default {
         } else {
           Logger.info('团队列表查询成功==========》', result)
           result.forEach((element: any) => {
-            element.members = element.members.split(',').map((i: String) => Number(i))
+            element.members = element.members
+              .split(',')
+              .map((i: String) => Number(i))
           })
           resolve(result)
         }
@@ -48,12 +51,10 @@ export default {
       )
     })
   },
-  createTeam: (
-    name: number,
-    captain: number,
-    members: []
-  ) => {
-    const sql = `INSERT INTO team ( name, captain, members, create_time) VALUES  ( '${name}', '${captain}', '${members.join(',')}',  NOW() )`
+  createTeam: (name: number, captain: number, members: []) => {
+    const sql = `INSERT INTO team ( name, captain, members, create_time) VALUES  ( '${name}', '${captain}', '${members.join(
+      ',',
+    )}',  NOW() )`
     return new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
         if (err) {
@@ -66,12 +67,7 @@ export default {
       })
     })
   },
-  updateTeam: (
-    id: number,
-    name: string,
-    captain: string,
-    members: number,
-  ) => {
+  updateTeam: (id: number, name: string, captain: string, members: number) => {
     const sql = `UPDATE team SET name='${name}', captain='${captain}', members='${members}' where id='${id}'`
     return new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
@@ -85,9 +81,7 @@ export default {
       })
     })
   },
-  deteleTeam: (
-    id: number
-  ) => {
+  deteleTeam: (id: number) => {
     const sql = `DELETE FROM team WHERE id='${id}'`
     return new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
@@ -97,6 +91,21 @@ export default {
         } else {
           Logger.info('删除团队成功==========》', result)
           resolve(true)
+        }
+      })
+    })
+  },
+  selectTeamByCaptain: (userId: number) => {
+    const sql = `select * from team where captain='${userId}'`
+    Logger.info('查询团队信息sql==========》', sql)
+    return new Promise((resolve, reject) => {
+      mysql.query(sql, (err, result) => {
+        if (err) {
+          Logger.info('查询团队信息成功==========》', err)
+          reject(err)
+        } else {
+          Logger.info('查询团队信息成功==========》', result)
+          resolve(result[0])
         }
       })
     })

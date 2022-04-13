@@ -111,7 +111,6 @@ export default {
         ? val[1]
         : val[0]
     }')`
-    console.log(sql, 11111)
     return new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
         if (err) {

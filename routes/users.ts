@@ -16,6 +16,7 @@ router.get('/login', (req, res, next) => {
           data.id,
           data.name,
           data.password,
+          data.level
         )
         response.success(res, {
           id: data.id,
