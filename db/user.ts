@@ -23,7 +23,7 @@ export default {
       (page - 1) * size
     },${size}`
     console.log(sql)
-    const sqlCount = `SELECT FOUND_ROWS() as totalElements`
+    const sqlCount = `SELECT COUNT(*) as totalElements FROM users`
     const P1 = new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
         if (err) {
@@ -87,6 +87,34 @@ export default {
         } else {
           Logger.info('新建用户成功==========》', result)
           resolve(true)
+        }
+      })
+    })
+  },
+  selectUsersByName: (name: string) => {
+    const sql = `select id, level, name from users where name='${name}'`
+    return new Promise((resolve, reject) => {
+      mysql.query(sql, (err, result) => {
+        if (err) {
+          Logger.info('查询用户失败==========》', err)
+          reject(err)
+        } else {
+          Logger.info('查询用户成功==========》', result)
+          resolve(result[0])
+        }
+      })
+    })
+  },
+  selectUsersById: (id: number) => {
+    const sql = `select id, level, name from users where id='${id}'`
+    return new Promise((resolve, reject) => {
+      mysql.query(sql, (err, result) => {
+        if (err) {
+          Logger.info('查询用户失败==========》', err)
+          reject(err)
+        } else {
+          Logger.info('查询用户成功==========》', result)
+          resolve(result[0])
         }
       })
     })

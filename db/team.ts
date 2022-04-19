@@ -6,7 +6,7 @@ export default {
     const sql = `select id, name, captain, members from team where 1=1 ${
       name ? 'and name="' + name + '"' : ''
     } limit ${(page - 1) * size},${size}`
-    const sqlCount = `SELECT FOUND_ROWS() as totalElements`
+    const sqlCount = `SELECT COUNT(*) as totalElements FROM team`
     const P1 = new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
         if (err) {
@@ -110,4 +110,34 @@ export default {
       })
     })
   },
+  selectTeamByName: (name: string) => {
+    const sql = `select * from team where name='${name}'`
+    Logger.info('查询团队信息sql==========》', sql)
+    return new Promise((resolve, reject) => {
+      mysql.query(sql, (err, result) => {
+        if (err) {
+          Logger.info('查询团队信息成功==========》', err)
+          reject(err)
+        } else {
+          Logger.info('查询团队信息成功==========》', result)
+          resolve(result[0])
+        }
+      })
+    })
+  },
+  selectTeamById: (id: number) => {
+    const sql = `select * from team where id='${id}'`
+    Logger.info('查询团队信息sql==========》', sql)
+    return new Promise((resolve, reject) => {
+      mysql.query(sql, (err, result) => {
+        if (err) {
+          Logger.info('查询团队信息成功==========》', err)
+          reject(err)
+        } else {
+          Logger.info('查询团队信息成功==========》', result)
+          resolve(result[0])
+        }
+      })
+    })
+  }
 }

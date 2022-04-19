@@ -16,7 +16,7 @@ router.get('/login', (req, res, next) => {
           data.id,
           data.name,
           data.password,
-          data.level
+          data.level,
         )
         response.success(res, {
           id: data.id,
@@ -49,6 +49,11 @@ router.post('/create', async (req, res, next) => {
   const { password, name, level }: any = req.body
   const token: any = req.headers.authorization
   const userInfo: any = await verifyToken(token)
+  const data = await userDb.selectUsersByName(name)
+  if (data) {
+    response.fail(res, '用户名已存在')
+    return
+  }
   userDb
     .createUser(password, name, level)
     .then(async (data: any) => {

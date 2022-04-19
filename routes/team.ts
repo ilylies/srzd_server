@@ -23,6 +23,11 @@ router.post("/create", async (req, res, next) => {
   const { name, captain, members }: any = req.body;
   const token: any = req.headers.authorization
   const userInfo: any = await verifyToken(token)
+  const data = await teamDb.selectTeamByName(name)
+  if(data){
+    response.fail(res, '团队名已存在');
+    return
+  }
   teamDb
     .createTeam(name, captain, members)
     .then(async (data: any) => {

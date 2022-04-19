@@ -1,11 +1,32 @@
 import express from 'express'
 import salesSlipDb from '../db/salesSlip'
 import teamDb from '../db/team'
+import userDb from '../db/user'
 import response from '../utils/response'
 const router = express.Router()
 import { verifyToken } from '../utils/token'
 import { sendMsg } from '../utils/wechat'
+import { Logger } from '../utils/log4js'
 
+const tags_type: any = {
+  1: '已放款',
+  2: '已拜访',
+  3: '短期办不了',
+  4: '待跟进',
+  5: '已办理拒绝',
+  6: '可以继续办理',
+  7: '办理中',
+}
+const appropriation_type: any = {
+  1: '建行',
+  2: '邮政',
+  3: '交行',
+  4: '广发',
+  5: '微众',
+  6: '苏宁',
+  7: '金城',
+  8: '网商',
+}
 /* GET salesSlip listing. */
 
 router.get('/list', async (req, res, next) => {
@@ -39,32 +60,13 @@ router.get('/list', async (req, res, next) => {
       teamId,
     )
     .then(async (data: any) => {
+      Logger.info('data========>', data)
       response.success(res, data)
     })
     .catch((err) => {
       response.fail(res, err)
     })
 })
-
-const tags_type: any = {
-  1: '已放款',
-  2: '已拜访',
-  3: '短期办不了',
-  4: '待跟进',
-  5: '已办理拒绝',
-  6: '可以继续办理',
-  7: '办理中',
-}
-const appropriation_type: any = {
-  1: '建行',
-  2: '邮政',
-  3: '交行',
-  4: '广发',
-  5: '微众',
-  6: '苏宁',
-  7: '金城',
-  8: '网商',
-}
 
 router.post('/create', async (req, res, next) => {
   const {
@@ -79,6 +81,7 @@ router.post('/create', async (req, res, next) => {
   }: any = req.body
   const token: any = req.headers.authorization
   const userInfo: any = await verifyToken(token)
+  
   salesSlipDb
     .createSalesSlip(
       company_name,
@@ -91,6 +94,9 @@ router.post('/create', async (req, res, next) => {
       telemarketer,
     )
     .then(async (data: any) => {
+      response.success(res, data)
+      const telemarketerInfo: any = await userDb.selectUsersById(telemarketer)
+      const teamInfo: any = await teamDb.selectTeamById(team)
       sendMsg(
         `${
           userInfo.name
@@ -100,8 +106,50 @@ router.post('/create', async (req, res, next) => {
           record ? JSON.parse(record)[0].content : ''
         }\n批款情况：${
           appropriation_type[appropriation_status] || appropriation_status
-        }\n所属团队：${team}\n电销员：${telemarketer}`,
+        }\n所属团队：${teamInfo.name}\n电销员：${telemarketerInfo.name}`,
       )
+    })
+    .catch((err) => {
+      response.fail(res, err)
+    })
+})
+
+router.post('/importSalesSlip', async (req, res, next) => {
+  const { importedData }: any = req.body
+  const token: any = req.headers.authorization
+  const userInfo: any = await verifyToken(token)
+  const formatterData = importedData.map((item: any) => {
+    item.create_time = new Date()
+    if (item.company_tags == 1) {
+      item.loan_amount_time = new Date()
+    } else {
+      item.loan_amount_time = null
+    }
+    const arr: any[] = []
+    const obj: any = {}
+    const keySortKey = [
+      'company_name',
+      'company_contact_name',
+      'loan_amount',
+      'company_tags',
+      'appropriation_status',
+      'team',
+      'telemarketer',
+      'record',
+      'create_time',
+      'loan_amount_time',
+    ]
+    keySortKey.forEach((i) => {
+      obj[i] = item[i]
+      arr.push(obj[i])
+    })
+    return arr
+  })
+
+  salesSlipDb
+    .importSalesSlip(formatterData)
+    .then(async (data: any) => {
+      sendMsg(`${userInfo.name}批量导入了${formatterData.length}条销售单`)
       response.success(res, data)
     })
     .catch((err) => {
@@ -135,7 +183,10 @@ router.put('/update/:id', async (req, res, next) => {
       telemarketer,
     )
     .then(async (data: any) => {
+      response.success(res, data)
       const recordData = record ? JSON.parse(record) : ''
+      const telemarketerInfo: any = await userDb.selectUsersById(telemarketer)
+      const teamInfo: any = await teamDb.selectTeamById(team)
       sendMsg(
         `${
           userInfo.name
@@ -145,9 +196,8 @@ router.put('/update/:id', async (req, res, next) => {
           recordData ? recordData[recordData.length - 1].content : recordData
         }\n批款情况：${
           appropriation_type[appropriation_status] || appropriation_status
-        }\n所属团队：${team}\n电销员：${telemarketer}`,
+        }\n所属团队：${teamInfo.name}\n电销员：${telemarketerInfo.name}`,
       )
-      response.success(res, data)
     })
     .catch((err) => {
       response.fail(res, err)
@@ -160,7 +210,7 @@ router.delete('/delete/:id', async (req, res, next) => {
   salesSlipDb
     .deteleSalesSlip(id)
     .then(async (data: any) => {
-      sendMsg(`${userInfo.name}删除了销售单：${id}`)
+      // sendMsg(`${userInfo.name}删除了销售单：${id}`)
       response.success(res, data)
     })
     .catch((err) => {

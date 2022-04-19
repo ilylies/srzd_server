@@ -50,7 +50,7 @@ app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   if (err.name === 'UnauthorizedError') {
     // 这个需要根据⾃自⼰己的业务逻辑来处理理
-    res.status(200).send({ code: 401, msg: 'invalid_token' })
+    res.status(200).send({ code: 401, msg: '信息失效了，请重新登录' })
   } else {
     // set locals, only providing error in development
     res.locals.message = err.message

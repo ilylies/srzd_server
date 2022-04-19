@@ -12,7 +12,7 @@ export default {
     telemarketer: number,
     userId: number,
     level: number,
-    teamId: number
+    teamId: number,
   ) => {
     let sql = `select * from sales_slip where 1=1 ${
       company_name ? 'and company_name="' + company_name + '"' : ''
@@ -32,7 +32,7 @@ export default {
     }
     sql += ` limit ${(page - 1) * size},${size}`
     Logger.info('销售单列表查询sql==========》', sql)
-    const sqlCount = `SELECT FOUND_ROWS() as totalElements`
+    const sqlCount = `SELECT COUNT(*) as totalElements FROM sales_slip`
     const P1 = new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
         if (err) {
@@ -40,6 +40,11 @@ export default {
           reject(err)
         } else {
           Logger.info('销售单列表查询成功==========》', result)
+          result.forEach((item: any) => {
+            item.appropriation_status = item.appropriation_status
+              .split(',')
+              .map((i: string) => Number(i) || i)
+          })
           resolve(result)
         }
       })
@@ -91,6 +96,21 @@ export default {
           reject(err)
         } else {
           Logger.info('新建销售单成功==========》', result)
+          resolve(true)
+        }
+      })
+    })
+  },
+  importSalesSlip: (values: any) => {
+    Logger.info('导入数据values==========》', values)
+    const sql = `INSERT INTO sales_slip(company_name, company_contact_name, loan_amount, company_tags, appropriation_status,team,telemarketer, record, create_time, loan_amount_time) VALUES ?`
+    return new Promise((resolve, reject) => {
+      mysql.query(sql, [values], (err, result) => {
+        if (err) {
+          Logger.info('批量导入销售单失败==========》', err)
+          reject(err)
+        } else {
+          Logger.info('批量导入销售单成功==========》', result)
           resolve(true)
         }
       })
