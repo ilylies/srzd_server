@@ -2,6 +2,7 @@ import express from 'express'
 import salesSlipDb from '../db/salesSlip'
 import teamDb from '../db/team'
 import userDb from '../db/user'
+import loanSituationDb from '../db/loanSituation'
 import response from '../utils/response'
 const router = express.Router()
 import { verifyToken } from '../utils/token'
@@ -46,13 +47,12 @@ router.get('/list', async (req, res, next) => {
     const teamData: any = await teamDb.selectTeamByCaptain(userInfo.id)
     teamId = teamData ? teamData.id : 0
   }
-  salesSlipDb
+  await salesSlipDb
     .selectSalesSlipList(
       page,
       size,
       company_name,
       company_tags,
-      appropriation_status,
       team,
       telemarketer,
       userInfo.id,
@@ -60,7 +60,15 @@ router.get('/list', async (req, res, next) => {
       teamId,
     )
     .then(async (data: any) => {
-      Logger.info('data========>', data)
+      data.content.forEach((i) => {
+        i.appropriation = i.appropriation.split(';').map((item) => {
+          const arr = item.split(',')
+          return {
+            appropriation_status: Number(arr[0]),
+            amount: Number(arr[1]),
+          }
+        })
+      })
       response.success(res, data)
     })
     .catch((err) => {
@@ -72,7 +80,6 @@ router.post('/create', async (req, res, next) => {
   const {
     company_name,
     company_contact_name,
-    loan_amount,
     company_tags,
     record,
     appropriation_status,
@@ -81,7 +88,11 @@ router.post('/create', async (req, res, next) => {
   }: any = req.body
   const token: any = req.headers.authorization
   const userInfo: any = await verifyToken(token)
-  
+  const loan_amount = appropriation_status
+    .map((i) => i.amount)
+    .reduce(function (p1, p2) {
+      return p1 + p2
+    })
   salesSlipDb
     .createSalesSlip(
       company_name,
@@ -89,12 +100,20 @@ router.post('/create', async (req, res, next) => {
       loan_amount,
       company_tags,
       record,
-      appropriation_status,
       team,
       telemarketer,
     )
-    .then(async (data: any) => {
-      response.success(res, data)
+    .then(async (insertId: any) => {
+      const data = appropriation_status.map((item) => {
+        const arr = []
+        Object.keys(item).forEach((i) => {
+          arr.push(item[i])
+        })
+        arr.push(insertId, new Date())
+        return arr
+      })
+      await loanSituationDb.create(data)
+      response.success(res, true)
       const telemarketerInfo: any = await userDb.selectUsersById(telemarketer)
       const teamInfo: any = await teamDb.selectTeamById(team)
       sendMsg(
@@ -104,8 +123,6 @@ router.post('/create', async (req, res, next) => {
           tags_type[company_tags]
         }\n跟进记录：${
           record ? JSON.parse(record)[0].content : ''
-        }\n批款情况：${
-          appropriation_type[appropriation_status] || appropriation_status
         }\n所属团队：${teamInfo.name}\n电销员：${telemarketerInfo.name}`,
       )
     })
@@ -132,7 +149,6 @@ router.post('/importSalesSlip', async (req, res, next) => {
       'company_contact_name',
       'loan_amount',
       'company_tags',
-      'appropriation_status',
       'team',
       'telemarketer',
       'record',
@@ -148,9 +164,25 @@ router.post('/importSalesSlip', async (req, res, next) => {
 
   salesSlipDb
     .importSalesSlip(formatterData)
-    .then(async (data: any) => {
+    .then(async (result: any) => {
+      const insertIdArr = [result.insertId]
+      for (let i = 1; i <= result.affectedRows; i++) {
+        insertIdArr.push(result.insertId + i)
+      }
+      const data  = []
+      importedData.forEach((i,index)=>{
+        i.appropriation_status.forEach((item) => {
+          const arr = []
+          Object.keys(item).forEach((k) => {
+            arr.push(item[k])
+          })
+          arr.push(insertIdArr[index], new Date())
+          data.push(arr)
+        })
+      })
+      await loanSituationDb.create(data)
       sendMsg(`${userInfo.name}批量导入了${formatterData.length}条销售单`)
-      response.success(res, data)
+      response.success(res, true)
     })
     .catch((err) => {
       response.fail(res, err)
@@ -160,7 +192,6 @@ router.put('/update/:id', async (req, res, next) => {
   const {
     company_name,
     company_contact_name,
-    loan_amount,
     company_tags,
     record,
     appropriation_status,
@@ -170,6 +201,11 @@ router.put('/update/:id', async (req, res, next) => {
   const { id }: any = req.params
   const token: any = req.headers.authorization
   const userInfo: any = await verifyToken(token)
+  const loan_amount = appropriation_status
+    .map((i) => i.amount)
+    .reduce(function (p1, p2) {
+      return p1 + p2
+    })
   salesSlipDb
     .updateSalesSlip(
       id,
@@ -178,12 +214,25 @@ router.put('/update/:id', async (req, res, next) => {
       loan_amount,
       company_tags,
       record,
-      appropriation_status,
       team,
       telemarketer,
     )
-    .then(async (data: any) => {
-      response.success(res, data)
+    .then(async (result: any) => {
+      const data = appropriation_status.map((item) => {
+        const obj = {
+          appropriation_status: Number(item.appropriation_status),
+          amount: Number(item.amount),
+        }
+        const arr = []
+        Object.keys(obj).forEach((i) => {
+          arr.push(obj[i])
+        })
+        arr.push(id, new Date())
+        return arr
+      })
+      await loanSituationDb.deleteBySid(id)
+      await loanSituationDb.create(data)
+      response.success(res, true)
       const recordData = record ? JSON.parse(record) : ''
       const telemarketerInfo: any = await userDb.selectUsersById(telemarketer)
       const teamInfo: any = await teamDb.selectTeamById(team)
@@ -210,7 +259,7 @@ router.delete('/delete/:id', async (req, res, next) => {
   salesSlipDb
     .deteleSalesSlip(id)
     .then(async (data: any) => {
-      // sendMsg(`${userInfo.name}删除了销售单：${id}`)
+      sendMsg(`${userInfo.name}删除了销售单：${id}`)
       response.success(res, data)
     })
     .catch((err) => {

@@ -7,32 +7,32 @@ export default {
     size: number,
     company_name: string,
     company_tags: number,
-    appropriation_status: number | string,
     team: number,
     telemarketer: number,
     userId: number,
     level: number,
     teamId: number,
   ) => {
-    let sql = `select * from sales_slip where 1=1 ${
-      company_name ? 'and company_name="' + company_name + '"' : ''
-    } ${company_tags ? 'and company_tags="' + company_tags + '"' : ''} ${
-      appropriation_status
-        ? 'and appropriation_status="' + appropriation_status + '"'
-        : ''
-    } ${team ? 'and team="' + team + '"' : ''} ${
-      telemarketer ? 'and telemarketer="' + telemarketer + '"' : ''
-    }`
+    let sql = `select a.*, GROUP_CONCAT(concat(b.appropriation_status, ',', b.amount) SEPARATOR ';') as appropriation from sales_slip as a join loan_situation as b on a.id=b.sid where 1=1 ${
+      company_name ? 'and a.company_name="' + company_name + '"' : ''
+    } ${company_tags ? 'and a.company_tags="' + company_tags + '"' : ''} ${
+      team ? 'and a.team="' + team + '"' : ''
+    } ${telemarketer ? 'and a.telemarketer="' + telemarketer + '"' : ''}`
+    
+    let sqlCount = `SELECT COUNT(DISTINCT a.id) as totalElements FROM sales_slip as a join loan_situation as b on a.id=b.sid`
 
     if (level === 2) {
       sql += ` and (team='${teamId}' or telemarketer='${userId}')`
+      sqlCount += ` where (a.team='${a.teamId}' or telemarketer='${userId}')`
     }
     if (level === 3) {
       sql += ` and telemarketer='${userId}'`
+      sqlCount += ` where a.telemarketer='${userId}'`
     }
-    sql += ` limit ${(page - 1) * size},${size}`
+    sql += ` group by a.id limit ${(page - 1) * size},${size}`
     Logger.info('销售单列表查询sql==========》', sql)
-    const sqlCount = `SELECT COUNT(*) as totalElements FROM sales_slip`
+
+    Logger.info('销售单列表总数查询sql==========》', sqlCount)
     const P1 = new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
         if (err) {
@@ -40,11 +40,6 @@ export default {
           reject(err)
         } else {
           Logger.info('销售单列表查询成功==========》', result)
-          result.forEach((item: any) => {
-            item.appropriation_status = item.appropriation_status
-              .split(',')
-              .map((i: string) => Number(i) || i)
-          })
           resolve(result)
         }
       })
@@ -52,10 +47,10 @@ export default {
     const P2 = new Promise((resolve, reject) => {
       mysql.query(sqlCount, (err, result) => {
         if (err) {
-          Logger.info('团队列表总数查询失败==========》', err)
+          Logger.info('销售单列表总数查询失败==========》', err)
           reject(err)
         } else {
-          Logger.info('团队列表总数查询成功==========》', result)
+          Logger.info('销售单列表总数查询成功==========》', result)
           resolve(result)
         }
       })
@@ -71,7 +66,7 @@ export default {
           })
         },
         (err) => {
-          Logger.info('团队列表查询失败==========》', err)
+          Logger.info('销售单查询失败==========》', err)
           reject(err)
         },
       )
@@ -83,12 +78,11 @@ export default {
     loan_amount: string,
     company_tags: number,
     record: string,
-    appropriation_status: number,
     team: number,
     telemarketer: number,
   ) => {
-    const sql = `INSERT INTO sales_slip ( company_name, company_contact_name, loan_amount, company_tags, record,appropriation_status,team,telemarketer,create_time) 
-    VALUES  ( '${company_name}', '${company_contact_name}', '${loan_amount}','${company_tags}','${record}','${appropriation_status}','${team}','${telemarketer}',  NOW() )`
+    const sql = `INSERT INTO sales_slip ( company_name, company_contact_name, loan_amount, company_tags, record, team,telemarketer,create_time,loan_amount_time) 
+    VALUES  ( '${company_name}', '${company_contact_name}', '${loan_amount}','${company_tags}','${record}','${team}','${telemarketer}', NOW(), ${company_tags==1?'NOW()':null})`
     return new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
         if (err) {
@@ -96,14 +90,14 @@ export default {
           reject(err)
         } else {
           Logger.info('新建销售单成功==========》', result)
-          resolve(true)
+          resolve(result.insertId)
         }
       })
     })
   },
   importSalesSlip: (values: any) => {
     Logger.info('导入数据values==========》', values)
-    const sql = `INSERT INTO sales_slip(company_name, company_contact_name, loan_amount, company_tags, appropriation_status,team,telemarketer, record, create_time, loan_amount_time) VALUES ?`
+    const sql = `INSERT INTO sales_slip(company_name, company_contact_name, loan_amount, company_tags, team,telemarketer, record, create_time, loan_amount_time) VALUES ?`
     return new Promise((resolve, reject) => {
       mysql.query(sql, [values], (err, result) => {
         if (err) {
@@ -111,7 +105,7 @@ export default {
           reject(err)
         } else {
           Logger.info('批量导入销售单成功==========》', result)
-          resolve(true)
+          resolve(result)
         }
       })
     })
@@ -123,7 +117,6 @@ export default {
     loan_amount: string,
     company_tags: number,
     record: string,
-    appropriation_status: number,
     team: number,
     telemarketer: number,
   ) => {
@@ -131,8 +124,7 @@ export default {
      company_contact_name='${company_contact_name}', 
      loan_amount='${loan_amount}', 
      company_tags='${company_tags}', 
-     record='${record}', loan_amount='${loan_amount}', 
-     appropriation_status='${appropriation_status}', 
+     record='${record}', loan_amount='${loan_amount}',
      team='${team}',
      telemarketer='${telemarketer}', 
      update_time=NOW()
@@ -164,9 +156,9 @@ export default {
     })
   },
   selectSalesTotal: (team?: number, userId?: number) => {
-    let daysql = `SELECT SUM(loan_amount) as daysTotal FROM sales_slip WHERE TO_DAYS(loan_amount_time)=TO_DAYS(NOW())`
-    let weeksql = `SELECT SUM(loan_amount) as weekTotal FROM sales_slip WHERE YEARWEEK(DATE_FORMAT(loan_amount_time,'%Y-%m-%d'))=YEARWEEK(NOW())`
-    let monthsql = `SELECT SUM(loan_amount) as monthTotal FROM sales_slip  WHERE DATE_FORMAT(loan_amount_time,'%Y%m')=DATE_FORMAT(CURDATE(),'%Y%m')`
+    let daysql = `SELECT SUM(loan_amount) as daysTotal FROM sales_slip WHERE TO_DAYS(loan_amount_time)=TO_DAYS(NOW()) AND company_tags=1`
+    let weeksql = `SELECT SUM(loan_amount) as weekTotal FROM sales_slip WHERE YEARWEEK(DATE_FORMAT(loan_amount_time,'%Y-%m-%d'))=YEARWEEK(NOW()) AND company_tags=1`
+    let monthsql = `SELECT SUM(loan_amount) as monthTotal FROM sales_slip  WHERE DATE_FORMAT(loan_amount_time,'%Y%m')=DATE_FORMAT(CURDATE(),'%Y%m') AND company_tags=1`
     daysql += team
       ? ` AND team='${team}';`
       : userId
@@ -203,7 +195,7 @@ export default {
   ) => {
     startTime += ' 00:00:00'
     endTime += ' 23:59:59'
-    let sql = `SELECT SUM(loan_amount) as total FROM sales_slip WHERE loan_amount_time >= '${startTime}' AND loan_amount_time <= '${endTime}'`
+    let sql = `SELECT SUM(loan_amount) as total FROM sales_slip WHERE company_tags=1 AND loan_amount_time >= '${startTime}' AND loan_amount_time <= '${endTime}'`
     sql += team
       ? ` AND team='${team}';`
       : userId
