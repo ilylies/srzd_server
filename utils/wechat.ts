@@ -32,12 +32,17 @@ function sendMsg(content: any) {
     request
       .post(
         `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${ACCESS_TOKEN}`,
-        { agentid: 1000002, msgtype: 'text', text: {content}, touser: '@all' },
+        {
+          agentid: 1000002,
+          msgtype: 'text',
+          text: { content },
+          touser: '@all',
+        },
       )
       .then((res: any) => {
-        if(res.errcode===0){
+        if (res.errcode === 0) {
           Logger.info('发送消息成功========》', res)
-        }else{
+        } else {
           Logger.info('发送消息失败========》', res.errmsg)
         }
       })

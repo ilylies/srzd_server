@@ -2,8 +2,8 @@ import mysql from '../utils/mysql'
 import { Logger } from '../utils/log4js'
 
 export default {
-  create: (values) => {
-    Logger.info('values=================================>',values)
+  create: (values: any) => {
+    Logger.info('values=================================>', values)
     const sql = `INSERT INTO loan_situation ( appropriation_status, amount, sid, create_time) VALUES  ?`
     return new Promise((resolve, reject) => {
       mysql.query(sql, [values], (err, result) => {
@@ -44,5 +44,5 @@ export default {
         }
       })
     })
-  }
+  },
 }

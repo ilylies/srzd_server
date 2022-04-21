@@ -60,8 +60,8 @@ router.get('/list', async (req, res, next) => {
       teamId,
     )
     .then(async (data: any) => {
-      data.content.forEach((i) => {
-        i.appropriation = i.appropriation.split(';').map((item) => {
+      data.content.forEach((i: any) => {
+        i.appropriation = i.appropriation.split(';').map((item: any) => {
           const arr = item.split(',')
           return {
             appropriation_status: Number(arr[0]),
@@ -89,8 +89,8 @@ router.post('/create', async (req, res, next) => {
   const token: any = req.headers.authorization
   const userInfo: any = await verifyToken(token)
   const loan_amount = appropriation_status
-    .map((i) => i.amount)
-    .reduce(function (p1, p2) {
+    .map((i: any) => i.amount)
+    .reduce(function (p1: number, p2: number) {
       return p1 + p2
     })
   salesSlipDb
@@ -104,9 +104,9 @@ router.post('/create', async (req, res, next) => {
       telemarketer,
     )
     .then(async (insertId: any) => {
-      const data = appropriation_status.map((item) => {
+      const data = appropriation_status.map((item: any) => {
         const arr = []
-        Object.keys(item).forEach((i) => {
+        Object.keys(item).forEach((i: any) => {
           arr.push(item[i])
         })
         arr.push(insertId, new Date())
@@ -169,11 +169,11 @@ router.post('/importSalesSlip', async (req, res, next) => {
       for (let i = 1; i <= result.affectedRows; i++) {
         insertIdArr.push(result.insertId + i)
       }
-      const data  = []
-      importedData.forEach((i,index)=>{
-        i.appropriation_status.forEach((item) => {
+      const data: any[] = []
+      importedData.forEach((i: any, index: number) => {
+        i.appropriation_status.forEach((item: any) => {
           const arr = []
-          Object.keys(item).forEach((k) => {
+          Object.keys(item).forEach((k: any) => {
             arr.push(item[k])
           })
           arr.push(insertIdArr[index], new Date())
@@ -202,8 +202,8 @@ router.put('/update/:id', async (req, res, next) => {
   const token: any = req.headers.authorization
   const userInfo: any = await verifyToken(token)
   const loan_amount = appropriation_status
-    .map((i) => i.amount)
-    .reduce(function (p1, p2) {
+    .map((i: any) => i.amount)
+    .reduce(function (p1: number, p2: number) {
       return p1 + p2
     })
   salesSlipDb
@@ -218,13 +218,13 @@ router.put('/update/:id', async (req, res, next) => {
       telemarketer,
     )
     .then(async (result: any) => {
-      const data = appropriation_status.map((item) => {
-        const obj = {
+      const data = appropriation_status.map((item: any) => {
+        const obj: any = {
           appropriation_status: Number(item.appropriation_status),
           amount: Number(item.amount),
         }
-        const arr = []
-        Object.keys(obj).forEach((i) => {
+        const arr: any = []
+        Object.keys(obj).forEach((i: any) => {
           arr.push(obj[i])
         })
         arr.push(id, new Date())

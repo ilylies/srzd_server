@@ -18,15 +18,15 @@ export default {
     } ${company_tags ? 'and a.company_tags="' + company_tags + '"' : ''} ${
       team ? 'and a.team="' + team + '"' : ''
     } ${telemarketer ? 'and a.telemarketer="' + telemarketer + '"' : ''}`
-    
+
     let sqlCount = `SELECT COUNT(DISTINCT a.id) as totalElements FROM sales_slip as a join loan_situation as b on a.id=b.sid`
 
     if (level === 2) {
-      sql += ` and (team='${teamId}' or telemarketer='${userId}')`
-      sqlCount += ` where (a.team='${a.teamId}' or telemarketer='${userId}')`
+      sql += ` and (a.team='${teamId}' or a.telemarketer='${userId}')`
+      sqlCount += ` where (a.team='${teamId}' or a.telemarketer='${userId}')`
     }
     if (level === 3) {
-      sql += ` and telemarketer='${userId}'`
+      sql += ` and a.telemarketer='${userId}'`
       sqlCount += ` where a.telemarketer='${userId}'`
     }
     sql += ` group by a.id limit ${(page - 1) * size},${size}`
@@ -82,7 +82,9 @@ export default {
     telemarketer: number,
   ) => {
     const sql = `INSERT INTO sales_slip ( company_name, company_contact_name, loan_amount, company_tags, record, team,telemarketer,create_time,loan_amount_time) 
-    VALUES  ( '${company_name}', '${company_contact_name}', '${loan_amount}','${company_tags}','${record}','${team}','${telemarketer}', NOW(), ${company_tags==1?'NOW()':null})`
+    VALUES  ( '${company_name}', '${company_contact_name}', '${loan_amount}','${company_tags}','${record}','${team}','${telemarketer}', NOW(), ${
+      company_tags == 1 ? 'NOW()' : null
+    })`
     return new Promise((resolve, reject) => {
       mysql.query(sql, (err, result) => {
         if (err) {
