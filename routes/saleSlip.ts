@@ -91,7 +91,7 @@ router.post('/create', async (req, res, next) => {
   const loan_amount = appropriation_status
     .map((i: any) => i.amount)
     .reduce(function (p1: number, p2: number) {
-      return p1 + p2
+      return Number(p1) + Number(p2)
     })
   salesSlipDb
     .createSalesSlip(
@@ -142,6 +142,11 @@ router.post('/importSalesSlip', async (req, res, next) => {
     } else {
       item.loan_amount_time = null
     }
+    item.loan_amount = item.appropriation_status
+    .map((i: any) => i.amount)
+    .reduce(function (p1: number, p2: number) {
+      return Number(p1) + Number(p2)
+    })
     const arr: any[] = []
     const obj: any = {}
     const keySortKey = [
@@ -204,7 +209,7 @@ router.put('/update/:id', async (req, res, next) => {
   const loan_amount = appropriation_status
     .map((i: any) => i.amount)
     .reduce(function (p1: number, p2: number) {
-      return p1 + p2
+      return Number(p1) + Number(p2)
     })
   salesSlipDb
     .updateSalesSlip(

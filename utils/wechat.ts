@@ -29,27 +29,27 @@ function getAccessToken() {
 function sendMsg(content: any) {
   return new Promise(async (resolve, reject) => {
     const ACCESS_TOKEN = await getAccessToken()
-    request
-      .post(
-        `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${ACCESS_TOKEN}`,
-        {
-          agentid: 1000002,
-          msgtype: 'text',
-          text: { content },
-          touser: '@all',
-        },
-      )
-      .then((res: any) => {
-        if (res.errcode === 0) {
-          Logger.info('发送消息成功========》', res)
-        } else {
-          Logger.info('发送消息失败========》', res.errmsg)
-        }
-      })
-      .catch((err) => {
-        Logger.info('发送消息失败========》', err)
-        reject(err)
-      })
+    // request
+    //   .post(
+    //     `https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${ACCESS_TOKEN}`,
+    //     {
+    //       agentid: 1000002,
+    //       msgtype: 'text',
+    //       text: { content },
+    //       touser: '@all',
+    //     },
+    //   )
+    //   .then((res: any) => {
+    //     if (res.errcode === 0) {
+    //       Logger.info('发送消息成功========》', res)
+    //     } else {
+    //       Logger.info('发送消息失败========》', res.errmsg)
+    //     }
+    //   })
+    //   .catch((err) => {
+    //     Logger.info('发送消息失败========》', err)
+    //     reject(err)
+    //   })
   })
 }
 
