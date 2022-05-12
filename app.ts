@@ -3,6 +3,7 @@ import express from 'express'
 import path from 'path'
 import cookieParser from 'cookie-parser'
 import logger from 'morgan'
+import bodyParser from 'body-parser'
 import LoggerMiddleware from './middleware/logger.middleware'
 import expressJWT from 'express-jwt'
 import config from './config/token'
@@ -25,6 +26,8 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(express.static(path.join(__dirname, 'public')))
+app.use(bodyParser.json({limit: '50mb'}));//使能 post 50mb以下的数据
+app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 app.use(
   expressJWT({
